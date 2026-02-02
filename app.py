@@ -69,9 +69,9 @@ PROMPTS = {
 # -----------------------------
 def pick_mode(conf: float) -> str:
     # Keep these as-is unless you want Leaning to appear more often for demos.
-    if conf < 0.55:
+    if conf < 0.60:
         return "unsure"
-    if conf < 0.70:
+    if conf < 0.80:
         return "leaning"
     return "suggest"
 
