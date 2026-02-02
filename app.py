@@ -218,15 +218,19 @@ if st.button("Run SYNCstate"):
         st.write("**Next prompt:** " + np.random.choice(PROMPTS[choice]))
 
     elif mode == "leaning":
-    st.warning("Leaning toward a state, but not certain. I’ll offer choices rather than a single answer.")
+    st.warning(
+        "Leaning toward a state, but not certain. I’ll offer choices rather than a single answer."
+    )
     top2 = dist.head(2)["state"].tolist()
     st.write(f"Top possibilities: **{top2[0]}** or **{top2[1]}**")
+
     choice = st.radio(
         "Which feels closer?",
         top2,
         index=0,
         key=f"choice_{pred_state}_{round(conf,2)}"
     )
+
     st.write("You selected:", choice)
     st.write("**Prompt:** " + np.random.choice(PROMPTS[choice]))
 
