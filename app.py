@@ -209,16 +209,24 @@ if st.button("Run SYNCstate"):
     st.bar_chart(dist.set_index("state"))
 
     st.markdown("### Humility-aware response")
-    mode = pick_mode(conf)
 
-    if mode == "unsure":
-        st.info("I’m not confident enough to label this. Let’s reflect with a quick check instead.")
-        st.write("**Prompt:** " + np.random.choice(PROMPTS["Unsure"]))
-        choice = st.radio("Which feels closest right now?", STATES, index=0)
-        st.write("**Next prompt:** " + np.random.choice(PROMPTS[choice]))
+mode = pick_mode(conf)
 
-    elif mode == "leaning":
-        st.warning(
+if mode == "unsure":
+    st.info(
+        "I’m not confident enough to label this. Let’s reflect with a quick check instead."
+    )
+    st.write("**Prompt:** " + np.random.choice(PROMPTS["Unsure"]))
+    choice = st.radio(
+        "Which feels closest right now?",
+        STATES,
+        index=0,
+        key="unsure_choice"
+    )
+    st.write("**Next prompt:** " + np.random.choice(PROMPTS[choice]))
+
+elif mode == "leaning":
+    st.warning(
         "Leaning toward a state, but not certain. I’ll offer choices rather than a single answer."
     )
     top2 = dist.head(2)["state"].tolist()
@@ -228,12 +236,14 @@ if st.button("Run SYNCstate"):
         "Which feels closer?",
         top2,
         index=0,
-        key=f"choice_{pred_state}_{round(conf,2)}"
+        key=f"leaning_{pred_state}_{round(conf,2)}"
     )
 
-        st.write("You selected:", choice)
-        st.write("**Prompt:** " + np.random.choice(PROMPTS[choice]))
+    st.write("You selected:", choice)
+    st.write("**Prompt:** " + np.random.choice(PROMPTS[choice]))
 
-    else:
-        st.success("Confident enough to suggest a reflection prompt (still not a judgment).")
-        st.write("**Prompt:** " + np.random.choice(PROMPTS[pred_state]))
+else:
+    st.success(
+        "Confident enough to suggest a reflection prompt (still not a judgment)."
+    )
+    st.write("**Prompt:** " + np.random.choice(PROMPTS[pred_state]))
