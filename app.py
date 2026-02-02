@@ -223,17 +223,26 @@ st.subheader("Try a new check-in")
 st.markdown("#### Quick demo presets")
 p1, p2, p3, p4 = st.columns(4)
 
+def apply_preset(vals: dict):
+    st.session_state["energy"] = vals["energy"]
+    st.session_state["stress"] = vals["stress"]
+    st.session_state["focus"] = vals["focus"]
+    st.session_state["tension"] = vals["tension"]
+    st.session_state["sleep"] = vals["sleep"]
+    st.session_state.preset = vals
+    st.rerun()
+
 if p1.button("Preset: Unsure"):
-    st.session_state.preset = {"energy": 4, "stress": 2, "focus": 1, "tension": 4, "sleep": 5}
+    apply_preset({"energy": 4, "stress": 2, "focus": 1, "tension": 4, "sleep": 5})
 
 if p2.button("Preset: Leaning"):
-    st.session_state.preset = {"energy": 3, "stress": 4, "focus": 3, "tension": 3, "sleep": 4}
+    apply_preset({"energy": 3, "stress": 4, "focus": 3, "tension": 3, "sleep": 4})
 
 if p3.button("Preset: Suggest"):
-    st.session_state.preset = {"energy": 4, "stress": 5, "focus": 2, "tension": 5, "sleep": 1}
+    apply_preset({"energy": 4, "stress": 5, "focus": 2, "tension": 5, "sleep": 1})
 
 if p4.button("Clear preset"):
-    st.session_state.preset = None
+    apply_preset({"energy": 3, "stress": 3, "focus": 3, "tension": 3, "sleep": 3})
 
 preset = st.session_state.preset or {"energy": 3, "stress": 3, "focus": 3, "tension": 3, "sleep": 3}
 
