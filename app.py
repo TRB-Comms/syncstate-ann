@@ -69,9 +69,9 @@ PROMPTS = {
 # -----------------------------
 def pick_mode(conf: float) -> str:
     # Keep these as-is unless you want Leaning to appear more often for demos.
-    if conf < 0.60:
+    if conf < 0.55:
         return "unsure"
-    if conf < 0.80:
+    if conf < 0.65:
         return "leaning"
     return "suggest"
 
@@ -223,26 +223,26 @@ st.subheader("Try a new check-in")
 st.markdown("#### Quick demo presets")
 p1, p2, p3, p4 = st.columns(4)
 
-def apply_preset(vals: dict):
+def apply_preset(vals: dict, override: str = "auto"):
     st.session_state["energy"] = vals["energy"]
     st.session_state["stress"] = vals["stress"]
     st.session_state["focus"] = vals["focus"]
     st.session_state["tension"] = vals["tension"]
     st.session_state["sleep"] = vals["sleep"]
-    st.session_state.preset = vals
+    st.session_state.demo_override = override
     st.rerun()
 
 if p1.button("Preset: Unsure"):
-    apply_preset({"energy": 4, "stress": 2, "focus": 1, "tension": 4, "sleep": 5})
+    apply_preset({"energy": 4, "stress": 2, "focus": 1, "tension": 4, "sleep": 5}, override="unsure")
 
 if p2.button("Preset: Leaning"):
-    apply_preset({"energy": 3, "stress": 4, "focus": 3, "tension": 3, "sleep": 4})
+    apply_preset({"energy": 3, "stress": 4, "focus": 3, "tension": 3, "sleep": 4}, override="leaning")
 
 if p3.button("Preset: Suggest"):
-    apply_preset({"energy": 4, "stress": 5, "focus": 2, "tension": 5, "sleep": 1})
+    apply_preset({"energy": 4, "stress": 5, "focus": 2, "tension": 5, "sleep": 1}, override="suggest")
 
 if p4.button("Clear preset"):
-    apply_preset({"energy": 3, "stress": 3, "focus": 3, "tension": 3, "sleep": 3})
+    apply_preset({"energy": 3, "stress": 3, "focus": 3, "tension": 3, "sleep": 3}, override="auto")
 
 preset = st.session_state.preset or {"energy": 3, "stress": 3, "focus": 3, "tension": 3, "sleep": 3}
 
@@ -290,6 +290,11 @@ if result is not None:
 
     # Compute mode ONCE and reuse it everywhere below (prevents NameError / mismatch)
     mode = pick_mode(conf)
+    
+# Demo override: force interaction style for screenshots
+if st.session_state.demo_override != "auto":
+    mode = st.session_state.demo_override
+    st.caption("Demo override is ON (interaction style forced for screenshots).")
 
     st.markdown("### Result")
     st.write("Inputs used:", st.session_state.last_inputs)
