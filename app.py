@@ -66,9 +66,9 @@ PROMPTS = {
 # -----------------------------
 def pick_mode(conf: float) -> str:
     # Adjust these if you want a more/less humble model
-    if conf < 0.55:
+    if conf < 0.60:
         return "unsure"
-    if conf < 0.70:
+    if conf < 0.80:
         return "leaning"
     return "suggest"
 
