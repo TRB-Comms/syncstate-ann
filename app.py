@@ -182,7 +182,6 @@ tension = c4.slider("Tension", 1, 5, 3)
 sleep = c5.slider("Sleep", 1, 5, 3)
 
 unsafe_flag = st.checkbox("I’m not safe / I need urgent help right now")
-
 if st.button("Run SYNCstate"):
     if unsafe_flag:
         st.error("You indicated you’re not safe. This demo can’t help with emergencies.")
@@ -190,18 +189,18 @@ if st.button("Run SYNCstate"):
         st.markdown("In the U.S., you can call or text **988** (Suicide & Crisis Lifeline).")
         st.stop()
 
-    X_new = np.array([[energy, stress, focus, tension, sleep]], dtype=float)
-
-    # Note: model expects FEATURES order: energy, stress_n, focus, tension, sleep
-    # stress slider maps to stress_n
+    # Build input in the same order the model expects
     X_new_model = np.array([[energy, stress, focus, tension, sleep]], dtype=float)
 
+    # Predict probabilities + compute confidence
     proba = model.predict_proba(X_new_model)[0]
     pred_idx = int(np.argmax(proba))
     pred_state = STATES[pred_idx]
     conf = float(np.max(proba))
 
-    dist = pd.DataFrame({"state": STATES, "probability": proba}).sort_values("probability", ascending=False)
+    dist = pd.DataFrame(
+        {"state": STATES, "probability": proba}
+    ).sort_values("probability", ascending=False)
 
     st.markdown("### Result")
     st.write(f"**Suggested state:** {pred_state}")
@@ -209,41 +208,40 @@ if st.button("Run SYNCstate"):
     st.bar_chart(dist.set_index("state"))
 
     st.markdown("### Humility-aware response")
+    mode = pick_mode(conf)
 
-mode = pick_mode(conf)
+    if mode == "unsure":
+        st.info(
+            "I’m not confident enough to label this. Let’s reflect with a quick check instead."
+        )
+        st.write("**Prompt:** " + np.random.choice(PROMPTS["Unsure"]))
+        choice = st.radio(
+            "Which feels closest right now?",
+            STATES,
+            index=0,
+            key="unsure_choice"
+        )
+        st.write("**Next prompt:** " + np.random.choice(PROMPTS[choice]))
 
-if mode == "unsure":
-    st.info(
-        "I’m not confident enough to label this. Let’s reflect with a quick check instead."
-    )
-    st.write("**Prompt:** " + np.random.choice(PROMPTS["Unsure"]))
-    choice = st.radio(
-        "Which feels closest right now?",
-        STATES,
-        index=0,
-        key="unsure_choice"
-    )
-    st.write("**Next prompt:** " + np.random.choice(PROMPTS[choice]))
+    elif mode == "leaning":
+        st.warning(
+            "Leaning toward a state, but not certain. I’ll offer choices rather than a single answer."
+        )
+        top2 = dist.head(2)["state"].tolist()
+        st.write(f"Top possibilities: **{top2[0]}** or **{top2[1]}**")
 
-elif mode == "leaning":
-    st.warning(
-        "Leaning toward a state, but not certain. I’ll offer choices rather than a single answer."
-    )
-    top2 = dist.head(2)["state"].tolist()
-    st.write(f"Top possibilities: **{top2[0]}** or **{top2[1]}**")
+        choice = st.radio(
+            "Which feels closer?",
+            top2,
+            index=0,
+            key=f"leaning_{pred_state}_{round(conf,2)}"
+        )
 
-    choice = st.radio(
-        "Which feels closer?",
-        top2,
-        index=0,
-        key=f"leaning_{pred_state}_{round(conf,2)}"
-    )
+        st.write("You selected:", choice)
+        st.write("**Prompt:** " + np.random.choice(PROMPTS[choice]))
 
-    st.write("You selected:", choice)
-    st.write("**Prompt:** " + np.random.choice(PROMPTS[choice]))
-
-else:
-    st.success(
-        "Confident enough to suggest a reflection prompt (still not a judgment)."
-    )
-    st.write("**Prompt:** " + np.random.choice(PROMPTS[pred_state]))
+    else:
+        st.success(
+            "Confident enough to suggest a reflection prompt (still not a judgment)."
+        )
+        st.write("**Prompt:** " + np.random.choice(PROMPTS[pred_state]))
