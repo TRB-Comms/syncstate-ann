@@ -278,7 +278,7 @@ if result is not None:
     st.write("Inputs used:", st.session_state.last_inputs)
     st.write(f"**Suggested state:** {pred_state}")
     st.write(f"**Confidence (calibrated):** {conf:.2f}")
-    st.bar_chart(dist.set_index("state"))
+    st.dataframe(dist, use_container_width=True)
 
     st.markdown("### Humility-aware response")
     mode = pick_mode(conf)
