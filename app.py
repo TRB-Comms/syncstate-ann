@@ -279,11 +279,9 @@ if result is not None:
     st.write(f"**Suggested state:** {pred_state}")
     st.write(f"**Confidence (calibrated):** {conf:.2f}")
     
-    st.dataframe(dist, use_container_width=True)
-    
     chart_df = dist.set_index("state")[["probability"]]
     st.bar_chart(chart_df)
-
+    st.caption("Probabilities are shown to emphasize uncertainty rather than certainty.")
     st.markdown("### Humility-aware response")
     mode = pick_mode(conf)
 
