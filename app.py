@@ -19,6 +19,9 @@ if "sync_result" not in st.session_state:
 if "last_inputs" not in st.session_state:
     st.session_state.last_inputs = None
 
+if "preset" not in st.session_state:
+    st.session_state.preset = None
+
 
 # -----------------------------
 # Configuration
@@ -56,7 +59,7 @@ PROMPTS = {
     ],
     "Unsure": [
         "I might be off. Which feels closer: steady, elevated, overloaded, or disconnected?",
-        "Quick check: is your body tense or more numb/flat?",
+        "Quick check: does your body feel tense, or more numb/flat?",
     ],
 }
 
@@ -65,10 +68,10 @@ PROMPTS = {
 # Humility thresholds
 # -----------------------------
 def pick_mode(conf: float) -> str:
-    # Adjust these if you want a more/less humble model
-    if conf < 0.60:
+    # Keep these as-is unless you want Leaning to appear more often for demos.
+    if conf < 0.55:
         return "unsure"
-    if conf < 0.80:
+    if conf < 0.70:
         return "leaning"
     return "suggest"
 
@@ -119,19 +122,17 @@ def load_data(path: str) -> pd.DataFrame:
 
 @st.cache_resource
 def train_model(df_raw: pd.DataFrame):
-    # Validate columns
     missing = [c for c in RAW_REQUIRED if c not in df_raw.columns]
     if missing:
         raise ValueError(f"Dataset missing columns: {missing}")
 
     df = df_raw.dropna(subset=RAW_REQUIRED).copy()
 
-    # Cast numeric columns safely
     for col in ["avg_bpm", "session_minutes", "sleep_hours", "practice_load", "mood", "stress", "support"]:
         df[col] = pd.to_numeric(df[col], errors="coerce")
     df = df.dropna(subset=RAW_REQUIRED).copy()
 
-    # Derived ANN features (normalized 1–5)
+    # Derived features (1–5, interpretable)
     df["energy_bpm"] = df["avg_bpm"].apply(bpm_to_energy)
     df["energy"] = ((df["energy_bpm"] + df["mood"]) / 2).round().clip(1, 5).astype(int)
 
@@ -171,7 +172,6 @@ def train_model(df_raw: pd.DataFrame):
         ]
     )
 
-    # Calibrate probabilities so "confidence" is more meaningful
     model = CalibratedClassifierCV(estimator=base, method="sigmoid", cv=3)
     model.fit(X_train, y_train)
 
@@ -179,7 +179,6 @@ def train_model(df_raw: pd.DataFrame):
     report = classification_report(y_test, y_pred, target_names=STATES, output_dict=False)
     cm = confusion_matrix(y_test, y_pred)
 
-    # Return cleaned df too for inspection
     return model, report, cm, df
 
 
@@ -188,7 +187,7 @@ def train_model(df_raw: pd.DataFrame):
 # -----------------------------
 st.set_page_config(page_title="SYNCstate ANN", layout="centered")
 st.title("SYNCstate ANN — Humble Reflection Demo")
-st.caption("ANN + calibrated uncertainty to support reflection without replacing human judgment.")
+st.caption("A calibrated ANN demo that adapts its response style based on uncertainty—supporting reflection, not replacing judgment.")
 
 with st.expander("What this is (and isn’t)"):
     st.markdown(
@@ -200,7 +199,6 @@ with st.expander("What this is (and isn’t)"):
 """
     )
 
-# Load + train
 df_raw = load_data(DATA_PATH)
 st.success(f"Loaded dataset: {DATA_PATH}")
 
@@ -221,18 +219,35 @@ with st.expander("Training summary"):
 st.divider()
 st.subheader("Try a new check-in")
 
+# Demo preset buttons (optional, but makes screenshot capture easy)
+st.markdown("#### Quick demo presets")
+p1, p2, p3, p4 = st.columns(4)
+
+if p1.button("Preset: Unsure"):
+    st.session_state.preset = {"energy": 4, "stress": 2, "focus": 1, "tension": 4, "sleep": 5}
+
+if p2.button("Preset: Leaning"):
+    st.session_state.preset = {"energy": 3, "stress": 4, "focus": 3, "tension": 3, "sleep": 4}
+
+if p3.button("Preset: Suggest"):
+    st.session_state.preset = {"energy": 4, "stress": 5, "focus": 2, "tension": 5, "sleep": 1}
+
+if p4.button("Clear preset"):
+    st.session_state.preset = None
+
+preset = st.session_state.preset or {"energy": 3, "stress": 3, "focus": 3, "tension": 3, "sleep": 3}
+
 c1, c2, c3, c4, c5 = st.columns(5)
-energy = c1.slider("Energy", 1, 5, 3)
-stress = c2.slider("Stress", 1, 5, 3)
-focus = c3.slider("Focus", 1, 5, 3)
-tension = c4.slider("Tension", 1, 5, 3)
-sleep = c5.slider("Sleep", 1, 5, 3)
+energy = c1.slider("Energy", 1, 5, preset["energy"], key="energy")
+stress = c2.slider("Stress", 1, 5, preset["stress"], key="stress")
+focus = c3.slider("Focus", 1, 5, preset["focus"], key="focus")
+tension = c4.slider("Tension", 1, 5, preset["tension"], key="tension")
+sleep = c5.slider("Sleep", 1, 5, preset["sleep"], key="sleep")
 
 unsafe_flag = st.checkbox("I’m not safe / I need urgent help right now")
-
 run = st.button("Run SYNCstate")
 
-# When button is clicked, compute & store result in session_state
+# On click: compute + store result, then rerun
 if run:
     if unsafe_flag:
         st.error("You indicated you’re not safe. This demo can’t help with emergencies.")
@@ -251,21 +266,11 @@ if run:
         "probability", ascending=False
     )
 
-    st.session_state.sync_result = {
-        "pred_state": pred_state,
-        "conf": conf,
-        "dist": dist,
-    }
-    st.session_state.last_inputs = {
-        "energy": energy,
-        "stress": stress,
-        "focus": focus,
-        "tension": tension,
-        "sleep": sleep,
-    }
+    st.session_state.sync_result = {"pred_state": pred_state, "conf": conf, "dist": dist}
+    st.session_state.last_inputs = {"energy": energy, "stress": stress, "focus": focus, "tension": tension, "sleep": sleep}
 
-    # Force a rerun so UI below uses stored result reliably
     st.rerun()
+
 
 # Render results if we have them
 result = st.session_state.sync_result
@@ -274,28 +279,33 @@ if result is not None:
     conf = result["conf"]
     dist = result["dist"]
 
+    # Compute mode ONCE and reuse it everywhere below (prevents NameError / mismatch)
+    mode = pick_mode(conf)
+
     st.markdown("### Result")
     st.write("Inputs used:", st.session_state.last_inputs)
-    st.write(f"**Strongest statistical pattern:** {pred_state}")
+
+    # Pick ONE phrasing you like:
+    st.write(f"**What the model leans toward (not a label):** {pred_state}")
+    # Alternative:
+    # st.write(f"**Model signal (not a label):** {pred_state}")
+    # st.write(f"**Strongest statistical pattern:** {pred_state}")
+
     st.write(f"**Confidence (calibrated):** {conf:.2f}")
-    
-    chart_df = dist.set_index("state")[["probability"]]
-    st.bar_chart(chart_df)
-    st.caption("Probabilities are shown to emphasize uncertainty rather than certainty.")
-    st.markdown("### Humility-aware response")
-    mode = pick_mode(conf)
-if pick_mode(conf) == "unsure":
-    st.caption("This signal is shown for transparency, not as a final assessment.")
 
     if mode == "unsure":
-        st.info("I’m not confident enough to label this. Let’s reflect with a quick check instead.")
+        st.caption("This signal is shown for transparency, not as a final assessment.")
+
+    chart_df = dist.set_index("state")[["probability"]]
+    st.bar_chart(chart_df)
+    st.caption("This shows likelihoods, not labels. You decide what fits.")
+
+    st.markdown("### Humility-aware response")
+
+    if mode == "unsure":
+        st.info("I might be off here. Rather than label your state, I’ll pause and ask for your perspective.")
         st.write("**Prompt:** " + np.random.choice(PROMPTS["Unsure"]))
-        choice = st.radio(
-            "Which feels closest right now?",
-            STATES,
-            index=0,
-            key="unsure_choice",
-        )
+        choice = st.radio("Which feels closest right now?", STATES, index=0, key="unsure_choice")
         st.write("**Next prompt:** " + np.random.choice(PROMPTS[choice]))
 
     elif mode == "leaning":
@@ -303,13 +313,7 @@ if pick_mode(conf) == "unsure":
         top2 = dist.head(2)["state"].tolist()
         st.write(f"Top possibilities: **{top2[0]}** or **{top2[1]}**")
 
-        choice = st.radio(
-            "Which feels closer?",
-            top2,
-            index=0,
-            key="leaning_choice",
-        )
-
+        choice = st.radio("Which feels closer?", top2, index=0, key="leaning_choice")
         st.write("You selected:", choice)
         st.write("**Prompt:** " + np.random.choice(PROMPTS[choice]))
 
