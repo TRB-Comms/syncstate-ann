@@ -22,6 +22,15 @@ if "last_inputs" not in st.session_state:
 if "demo_override" not in st.session_state:
     st.session_state["demo_override"] = "auto"
 
+# Next-step log + feedback memory (session-only)
+if "step_log" not in st.session_state:
+    st.session_state["step_log"] = []
+
+# feedback stats stored as:
+# { "State|Lane|Action": {"up": int, "down": int} }
+if "step_feedback" not in st.session_state:
+    st.session_state["step_feedback"] = {}
+
 
 # -----------------------------
 # Configuration
@@ -61,6 +70,56 @@ PROMPTS = {
         "I might be off. Which feels closer: steady, elevated, overloaded, or disconnected?",
         "Quick check: does your body feel tense, or more numb/flat?",
     ],
+}
+
+NEXT_STEPS = {
+    "Balanced": {
+        "Protect": [
+            "Name one thing you want to protect today (10 seconds).",
+            "Choose one boundary: stop time / break time / screen-off time.",
+        ],
+        "Grow": [
+            "Pick one small ‘next’ that feels light (2 minutes).",
+            "Write one sentence: ‘Today counts even if…’",
+        ],
+    },
+    "Elevated": {
+        "Channel": [
+            "Pick ONE priority for the next 30 minutes (not three).",
+            "Set a 10-minute timer and start the smallest step.",
+        ],
+        "Soften": [
+            "Do 3 slow exhales, then decide what can wait.",
+            "Drink water and stretch your shoulders for 30 seconds.",
+        ],
+    },
+    "Overloaded": {
+        "Reduce": [
+            "Write your top 3 tasks and postpone ONE.",
+            "Choose ‘minimum viable’ for the next hour.",
+        ],
+        "Recover": [
+            "60 seconds: unclench jaw, drop shoulders, slow breathing.",
+            "Stand and walk for 90 seconds.",
+        ],
+    },
+    "Disconnected": {
+        "Reconnect": [
+            "5-4-3-2-1 grounding: name 5 things you see…",
+            "Touch something textured and describe it for 20 seconds.",
+        ],
+        "Support": [
+            "Message one safe person: ‘Can I borrow 2 minutes?’",
+            "Write one sentence about what you feel (no fixing).",
+        ],
+    },
+    # Used if you ever want next-steps before a user chooses a state
+    "Unsure": {
+        "Clarify": [
+            "Pick the closest state first, then choose one micro-step.",
+            "What’s loudest right now: stress, tiredness, pressure, or numbness?",
+        ],
+    },
 }
 
 
@@ -177,11 +236,136 @@ def train_model(df_raw: pd.DataFrame):
 
 
 # -----------------------------
+# Next-step personalization helpers
+# -----------------------------
+def _fb_key(state: str, lane: str, action: str) -> str:
+    return f"{state}|{lane}|{action}"
+
+
+def record_feedback(state: str, lane: str, action: str, is_helpful: bool):
+    key = _fb_key(state, lane, action)
+    stats = st.session_state["step_feedback"].get(key, {"up": 0, "down": 0})
+    if is_helpful:
+        stats["up"] += 1
+    else:
+        stats["down"] += 1
+    st.session_state["step_feedback"][key] = stats
+
+
+def score_action(state: str, lane: str, action: str) -> int:
+    """
+    Simple session-based preference score.
+    Positive feedback bumps options up; negative feedback nudges down.
+    """
+    stats = st.session_state["step_feedback"].get(_fb_key(state, lane, action), {"up": 0, "down": 0})
+    return int(stats["up"]) - int(stats["down"])
+
+
+def render_next_step(chosen_state: str, mode: str):
+    st.markdown("### Next step")
+    st.caption("Choose one small action. This is a suggestion, not a prescription.")
+
+    library = NEXT_STEPS.get(chosen_state, NEXT_STEPS["Unsure"])
+    lanes = list(library.keys())
+
+    lane = st.selectbox("Pick a lane", lanes, index=0, key=f"lane_{mode}_{chosen_state}")
+    actions = library[lane]
+
+    # Reorder actions using feedback score (higher first), stable within session
+    actions_sorted = sorted(actions, key=lambda a: score_action(chosen_state, lane, a), reverse=True)
+
+    action = st.radio(
+        "Pick one micro-action",
+        actions_sorted,
+        index=0,
+        key=f"action_{mode}_{chosen_state}",
+    )
+
+    # Show subtle note if action ordering is influenced by feedback
+    top_score = score_action(chosen_state, lane, actions_sorted[0])
+    if top_score != 0:
+        st.caption("Ordered using your feedback in this session.")
+
+    c1, c2, c3, c4 = st.columns([1, 1, 1, 1])
+    minutes = c1.selectbox("Time-box", [1, 2, 5, 10, 15], index=1, key=f"mins_{mode}_{chosen_state}")
+    start = c2.button("Start now", key=f"start_{mode}_{chosen_state}")
+    log = c3.button("Log this", key=f"log_{mode}_{chosen_state}")
+    clear = c4.button("Clear log", key="clear_step_log")
+
+    if start:
+        st.info(f"Timer started: {minutes} minute(s). Do: **{action}**")
+        st.caption("If it feels like too much, reduce the step—not your self-worth.")
+
+    if log:
+        st.session_state["step_log"].append(
+            {"state": chosen_state, "lane": lane, "action": action, "minutes": minutes}
+        )
+        st.success("Logged.")
+
+    if clear:
+        st.session_state["step_log"] = []
+        st.session_state["step_feedback"] = {}
+        st.success("Cleared step log + feedback for this session.")
+        st.rerun()
+
+    # Feedback buttons (adaptive learning - session-based)
+    st.markdown("#### Quick feedback (optional)")
+    st.caption("This reorders suggestions in this session only.")
+
+    f1, f2, f3 = st.columns([1, 1, 2])
+    if f1.button("👍 Helped", key=f"fb_up_{mode}_{chosen_state}_{lane}"):
+        record_feedback(chosen_state, lane, action, is_helpful=True)
+        st.success("Thanks — I’ll surface options like that more in this session.")
+        st.rerun()
+
+    if f2.button("👎 Not for me", key=f"fb_down_{mode}_{chosen_state}_{lane}"):
+        record_feedback(chosen_state, lane, action, is_helpful=False)
+        st.info("Got it — I’ll de-emphasize that option in this session.")
+        st.rerun()
+
+    # Session log + export
+    if st.session_state.get("step_log"):
+        with st.expander("Your step log (this session)"):
+            log_df = pd.DataFrame(st.session_state["step_log"])
+            st.dataframe(log_df, use_container_width=True)
+
+            csv = log_df.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                "Download log as CSV",
+                data=csv,
+                file_name="syncstate_next_steps_log.csv",
+                mime="text/csv",
+            )
+
+    # Optional: export feedback too (nice for case studies)
+    with st.expander("Feedback data (this session)"):
+        fb = st.session_state.get("step_feedback", {})
+        if not fb:
+            st.caption("No feedback recorded yet.")
+        else:
+            fb_rows = []
+            for k, v in fb.items():
+                s, l, a = k.split("|", 2)
+                fb_rows.append({"state": s, "lane": l, "action": a, "helped": v["up"], "not_for_me": v["down"], "score": v["up"] - v["down"]})
+            fb_df = pd.DataFrame(fb_rows).sort_values(["score", "helped"], ascending=False)
+            st.dataframe(fb_df, use_container_width=True)
+            fb_csv = fb_df.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                "Download feedback as CSV",
+                data=fb_csv,
+                file_name="syncstate_next_steps_feedback.csv",
+                mime="text/csv",
+            )
+
+
+# -----------------------------
 # UI
 # -----------------------------
 st.set_page_config(page_title="SYNCstate ANN", layout="centered")
 st.title("SYNCstate ANN — Humble Reflection Demo")
-st.caption("A calibrated ANN demo that adapts its response style based on uncertainty—supporting reflection, not replacing judgment.")
+st.caption(
+    "A calibrated ANN demo that adapts its response style based on uncertainty—supporting reflection, not replacing judgment."
+)
 
 with st.expander("What this is (and isn’t)"):
     st.markdown(
@@ -215,22 +399,23 @@ st.subheader("Try a new check-in")
 
 
 # -----------------------------
-# Presets that ACTUALLY MOVE SLIDERS + force demo modes
+# Presets that MOVE SLIDERS + force demo modes
 # -----------------------------
 st.markdown("#### Quick demo presets (for screenshots)")
-
 p1, p2, p3, p4 = st.columns(4)
 
+
 def apply_preset(vals: dict, override: str):
-    # Set widget state directly (because sliders have keys)
+    # Set widget state directly (sliders have keys)
     st.session_state["energy"] = vals["energy"]
     st.session_state["stress"] = vals["stress"]
     st.session_state["focus"] = vals["focus"]
     st.session_state["tension"] = vals["tension"]
     st.session_state["sleep"] = vals["sleep"]
-    # Set override so the UX mode matches the preset
+    # Set override so the UX mode matches preset
     st.session_state["demo_override"] = override
     st.rerun()
+
 
 if p1.button("Preset: Unsure"):
     apply_preset({"energy": 4, "stress": 2, "focus": 1, "tension": 4, "sleep": 5}, override="unsure")
@@ -242,12 +427,11 @@ if p3.button("Preset: Suggest"):
     apply_preset({"energy": 4, "stress": 5, "focus": 2, "tension": 5, "sleep": 1}, override="suggest")
 
 if p4.button("Auto mode"):
-    # Turn off forcing (use real model confidence)
     st.session_state["demo_override"] = "auto"
     st.rerun()
 
 
-# Sliders (keys must match the preset setter above)
+# Sliders (keys must match apply_preset)
 c1, c2, c3, c4, c5 = st.columns(5)
 energy = c1.slider("Energy", 1, 5, 3, key="energy")
 stress = c2.slider("Stress", 1, 5, 3, key="stress")
@@ -328,6 +512,9 @@ if result is not None:
         choice = st.radio("Which feels closest right now?", STATES, index=0, key="unsure_choice")
         st.write("**Next prompt:** " + np.random.choice(PROMPTS[choice]))
 
+        chosen_state = choice
+        render_next_step(chosen_state, mode)
+
     elif mode == "leaning":
         st.warning("Leaning toward a state, but not certain. I’ll offer choices rather than a single answer.")
         top2 = dist.head(2)["state"].tolist()
@@ -336,9 +523,15 @@ if result is not None:
         st.write("You selected:", choice)
         st.write("**Prompt:** " + np.random.choice(PROMPTS[choice]))
 
+        chosen_state = choice
+        render_next_step(chosen_state, mode)
+
     else:
         st.success("Confident enough to suggest a reflection prompt (still not a judgment).")
         st.write("**Prompt:** " + np.random.choice(PROMPTS[pred_state]))
+
+        chosen_state = pred_state
+        render_next_step(chosen_state, mode)
 
     st.divider()
     if st.button("Clear result"):
