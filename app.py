@@ -218,7 +218,7 @@ if st.button("Run SYNCstate"):
         st.write("**Next prompt:** " + np.random.choice(PROMPTS[choice]))
 
     elif mode == "leaning":
-    st.warning(
+        st.warning(
         "Leaning toward a state, but not certain. I’ll offer choices rather than a single answer."
     )
     top2 = dist.head(2)["state"].tolist()
@@ -231,8 +231,8 @@ if st.button("Run SYNCstate"):
         key=f"choice_{pred_state}_{round(conf,2)}"
     )
 
-    st.write("You selected:", choice)
-    st.write("**Prompt:** " + np.random.choice(PROMPTS[choice]))
+        st.write("You selected:", choice)
+        st.write("**Prompt:** " + np.random.choice(PROMPTS[choice]))
 
     else:
         st.success("Confident enough to suggest a reflection prompt (still not a judgment).")
