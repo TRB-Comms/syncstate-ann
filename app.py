@@ -395,13 +395,13 @@ with st.expander("Training summary"):
     st.write(pd.DataFrame(cm, index=STATES, columns=STATES))
 
 st.divider()
-st.subheader("Try a new check-in")
+st.subheader("How you feeling today?")
 
 
 # -----------------------------
 # Presets that MOVE SLIDERS + force demo modes
 # -----------------------------
-st.markdown("#### Quick demo presets (for screenshots)")
+st.markdown("#### Quick demo presets")
 p1, p2, p3, p4 = st.columns(4)
 
 
