@@ -359,7 +359,8 @@ if not PUBLIC_DEMO:
         st.write(pd.DataFrame(cm, index=STATES, columns=STATES))
 
 st.divider()
-st.subheader("Try a new check-in")
+st.subheader("How are you doing today?")
+st.caption("Move the sliders to reflect how things feel right now.")
 
 # Presets (no extra copy)
 p1, p2, p3, p4 = st.columns(4)
