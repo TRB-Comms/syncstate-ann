@@ -11,16 +11,16 @@ from sklearn.metrics import classification_report, confusion_matrix
 
 
 # -----------------------------
-# Session state init
+# Session state init (SAFE)
 # -----------------------------
 if "sync_result" not in st.session_state:
-    st.session_state.sync_result = None
+    st.session_state["sync_result"] = None
 
 if "last_inputs" not in st.session_state:
-    st.session_state.last_inputs = None
+    st.session_state["last_inputs"] = None
 
-if "preset" not in st.session_state:
-    st.session_state.preset = None
+if "demo_override" not in st.session_state:
+    st.session_state["demo_override"] = "auto"
 
 
 # -----------------------------
@@ -64,14 +64,11 @@ PROMPTS = {
 }
 
 
-# -----------------------------
-# Humility thresholds
-# -----------------------------
 def pick_mode(conf: float) -> str:
-    # Keep these as-is unless you want Leaning to appear more often for demos.
+    # Auto mode thresholds (real model output)
     if conf < 0.55:
         return "unsure"
-    if conf < 0.65:
+    if conf < 0.70:
         return "leaning"
     return "suggest"
 
@@ -132,7 +129,7 @@ def train_model(df_raw: pd.DataFrame):
         df[col] = pd.to_numeric(df[col], errors="coerce")
     df = df.dropna(subset=RAW_REQUIRED).copy()
 
-    # Derived features (1–5, interpretable)
+    # Derived features (interpretable, 1–5)
     df["energy_bpm"] = df["avg_bpm"].apply(bpm_to_energy)
     df["energy"] = ((df["energy_bpm"] + df["mood"]) / 2).round().clip(1, 5).astype(int)
 
@@ -145,10 +142,7 @@ def train_model(df_raw: pd.DataFrame):
     df = df[df["state"].isin(STATES)].copy()
 
     if len(df) < 40:
-        raise ValueError(
-            f"Not enough usable rows after cleaning ({len(df)}). "
-            "Add more data or reduce filtering."
-        )
+        raise ValueError(f"Not enough usable rows after cleaning ({len(df)}). Add more data.")
 
     FEATURES = ["energy", "stress_n", "focus", "tension", "sleep"]
     X = df[FEATURES].astype(float).values
@@ -203,7 +197,7 @@ df_raw = load_data(DATA_PATH)
 st.success(f"Loaded dataset: {DATA_PATH}")
 
 with st.expander("Dataset preview"):
-    st.dataframe(df_raw.head(15), use_container_width=True)
+    st.dataframe(df_raw.head(12), use_container_width=True)
     st.write("Columns:", list(df_raw.columns))
 
 model, report, cm, df_clean = train_model(df_raw)
@@ -219,17 +213,23 @@ with st.expander("Training summary"):
 st.divider()
 st.subheader("Try a new check-in")
 
-# Demo preset buttons (optional, but makes screenshot capture easy)
-st.markdown("#### Quick demo presets")
+
+# -----------------------------
+# Presets that ACTUALLY MOVE SLIDERS + force demo modes
+# -----------------------------
+st.markdown("#### Quick demo presets (for screenshots)")
+
 p1, p2, p3, p4 = st.columns(4)
 
-def apply_preset(vals: dict, override: str = "auto"):
+def apply_preset(vals: dict, override: str):
+    # Set widget state directly (because sliders have keys)
     st.session_state["energy"] = vals["energy"]
     st.session_state["stress"] = vals["stress"]
     st.session_state["focus"] = vals["focus"]
     st.session_state["tension"] = vals["tension"]
     st.session_state["sleep"] = vals["sleep"]
-    st.session_state.demo_override = override
+    # Set override so the UX mode matches the preset
+    st.session_state["demo_override"] = override
     st.rerun()
 
 if p1.button("Preset: Unsure"):
@@ -241,20 +241,23 @@ if p2.button("Preset: Leaning"):
 if p3.button("Preset: Suggest"):
     apply_preset({"energy": 4, "stress": 5, "focus": 2, "tension": 5, "sleep": 1}, override="suggest")
 
-if p4.button("Clear preset"):
-    apply_preset({"energy": 3, "stress": 3, "focus": 3, "tension": 3, "sleep": 3}, override="auto")
+if p4.button("Auto mode"):
+    # Turn off forcing (use real model confidence)
+    st.session_state["demo_override"] = "auto"
+    st.rerun()
 
-preset = st.session_state.preset or {"energy": 3, "stress": 3, "focus": 3, "tension": 3, "sleep": 3}
 
+# Sliders (keys must match the preset setter above)
 c1, c2, c3, c4, c5 = st.columns(5)
-energy = c1.slider("Energy", 1, 5, preset["energy"], key="energy")
-stress = c2.slider("Stress", 1, 5, preset["stress"], key="stress")
-focus = c3.slider("Focus", 1, 5, preset["focus"], key="focus")
-tension = c4.slider("Tension", 1, 5, preset["tension"], key="tension")
-sleep = c5.slider("Sleep", 1, 5, preset["sleep"], key="sleep")
+energy = c1.slider("Energy", 1, 5, 3, key="energy")
+stress = c2.slider("Stress", 1, 5, 3, key="stress")
+focus = c3.slider("Focus", 1, 5, 3, key="focus")
+tension = c4.slider("Tension", 1, 5, 3, key="tension")
+sleep = c5.slider("Sleep", 1, 5, 3, key="sleep")
 
 unsafe_flag = st.checkbox("I’m not safe / I need urgent help right now")
 run = st.button("Run SYNCstate")
+
 
 # On click: compute + store result, then rerun
 if run:
@@ -275,36 +278,39 @@ if run:
         "probability", ascending=False
     )
 
-    st.session_state.sync_result = {"pred_state": pred_state, "conf": conf, "dist": dist}
-    st.session_state.last_inputs = {"energy": energy, "stress": stress, "focus": focus, "tension": tension, "sleep": sleep}
+    st.session_state["sync_result"] = {"pred_state": pred_state, "conf": conf, "dist": dist}
+    st.session_state["last_inputs"] = {
+        "energy": energy,
+        "stress": stress,
+        "focus": focus,
+        "tension": tension,
+        "sleep": sleep,
+    }
 
     st.rerun()
 
 
+# -----------------------------
 # Render results if we have them
-result = st.session_state.sync_result
+# -----------------------------
+result = st.session_state.get("sync_result")
 if result is not None:
     pred_state = result["pred_state"]
     conf = result["conf"]
     dist = result["dist"]
 
-    # Compute mode ONCE and reuse it everywhere below (prevents NameError / mismatch)
+    # Auto mode from confidence
     mode = pick_mode(conf)
-    
-# Demo override: force interaction style for screenshots
-if st.session_state.demo_override != "auto":
-    mode = st.session_state.demo_override
-    st.caption("Demo override is ON (interaction style forced for screenshots).")
+
+    # Demo override (safe)
+    override = st.session_state.get("demo_override", "auto")
+    if override != "auto":
+        mode = override
+        st.caption("Demo override is ON (interaction style forced for screenshots).")
 
     st.markdown("### Result")
-    st.write("Inputs used:", st.session_state.last_inputs)
-
-    # Pick ONE phrasing you like:
+    st.write("Inputs used:", st.session_state.get("last_inputs"))
     st.write(f"**What the model leans toward (not a label):** {pred_state}")
-    # Alternative:
-    # st.write(f"**Model signal (not a label):** {pred_state}")
-    # st.write(f"**Strongest statistical pattern:** {pred_state}")
-
     st.write(f"**Confidence (calibrated):** {conf:.2f}")
 
     if mode == "unsure":
@@ -326,7 +332,6 @@ if st.session_state.demo_override != "auto":
         st.warning("Leaning toward a state, but not certain. I’ll offer choices rather than a single answer.")
         top2 = dist.head(2)["state"].tolist()
         st.write(f"Top possibilities: **{top2[0]}** or **{top2[1]}**")
-
         choice = st.radio("Which feels closer?", top2, index=0, key="leaning_choice")
         st.write("You selected:", choice)
         st.write("**Prompt:** " + np.random.choice(PROMPTS[choice]))
@@ -337,6 +342,6 @@ if st.session_state.demo_override != "auto":
 
     st.divider()
     if st.button("Clear result"):
-        st.session_state.sync_result = None
-        st.session_state.last_inputs = None
+        st.session_state["sync_result"] = None
+        st.session_state["last_inputs"] = None
         st.rerun()
