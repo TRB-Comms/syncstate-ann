@@ -263,8 +263,8 @@ def score_action(state: str, lane: str, action: str) -> int:
 
 
 def render_next_step(chosen_state: str, mode: str):
-    st.markdown("### Next step")
-    st.caption("Pick one small action. You’re in charge — this is a menu, not a mandate.")
+    st.markdown("### If you want, try one small next step")
+    st.caption("Think of this as an experiment — you can adjust or ignore anything here.")
 
     library = NEXT_STEPS.get(chosen_state, NEXT_STEPS["Unsure"])
     lanes = list(library.keys())
@@ -289,8 +289,8 @@ def render_next_step(chosen_state: str, mode: str):
         )
         st.success("Logged.")
 
-    st.markdown("#### Feedback (optional)")
-    st.caption("This only affects ordering during this session.")
+    st.markdown("#### Was this helpful?")
+    st.caption("This only affects suggestions during this session.")
 
     f1, f2, f3 = st.columns([1, 1, 2])
     if f1.button("👍 Helped", key=f"fb_up_{mode}_{chosen_state}_{lane}"):
@@ -360,7 +360,7 @@ if not PUBLIC_DEMO:
 
 st.divider()
 st.subheader("How are you doing today?")
-st.caption("Move the sliders to let Tee know how things feel right now.")
+st.caption("Move the sliders to reflect how things feel right now.")
 
 # Presets (no extra copy)
 p1, p2, p3, p4 = st.columns(4)
@@ -469,7 +469,7 @@ if result is not None:
         render_next_step(chosen_state, mode)
 
     st.divider()
-    if st.button("Clear result"):
+    if st.button("Start a new check-in"):
         st.session_state["sync_result"] = None
         st.session_state["last_inputs"] = None
         st.rerun()
