@@ -276,7 +276,7 @@ if result is not None:
 
     st.markdown("### Result")
     st.write("Inputs used:", st.session_state.last_inputs)
-    st.write(f"**Suggested state:** {pred_state}")
+    st.write(f"**Model signal (not a label):** {pred_state}")
     st.write(f"**Confidence (calibrated):** {conf:.2f}")
     
     chart_df = dist.set_index("state")[["probability"]]
