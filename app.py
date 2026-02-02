@@ -276,7 +276,7 @@ if result is not None:
 
     st.markdown("### Result")
     st.write("Inputs used:", st.session_state.last_inputs)
-    st.write(f"**Model signal (not a label):** {pred_state}")
+    st.write(f"**Strongest statistical pattern:** {pred_state}")
     st.write(f"**Confidence (calibrated):** {conf:.2f}")
     
     chart_df = dist.set_index("state")[["probability"]]
@@ -284,6 +284,8 @@ if result is not None:
     st.caption("Probabilities are shown to emphasize uncertainty rather than certainty.")
     st.markdown("### Humility-aware response")
     mode = pick_mode(conf)
+if pick_mode(conf) == "unsure":
+    st.caption("This signal is shown for transparency, not as a final assessment.")
 
     if mode == "unsure":
         st.info("I’m not confident enough to label this. Let’s reflect with a quick check instead.")
