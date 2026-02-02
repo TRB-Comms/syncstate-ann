@@ -2,6 +2,12 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
+# Demo mode toggle
+PUBLIC_DEMO = True
+
+st.title("SYNCstate ANN — Humble Reflection Demo")
+st.caption(f"PUBLIC_DEMO = {PUBLIC_DEMO}")
+
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
