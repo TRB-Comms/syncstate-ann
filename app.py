@@ -2,18 +2,18 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-# Demo mode toggle
-PUBLIC_DEMO = True
-
-st.title("SYNCstate ANN — Humble Reflection Demo")
-st.caption(f"PUBLIC_DEMO = {PUBLIC_DEMO}")
-
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.neural_network import MLPClassifier
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.metrics import classification_report, confusion_matrix
+
+
+# =========================================================
+# DEMO MODE (public-safe)
+# =========================================================
+PUBLIC_DEMO = True  # True = hide dataset preview + training details
 
 
 # -----------------------------
@@ -119,7 +119,6 @@ NEXT_STEPS = {
             "Write one sentence about what you feel (no fixing).",
         ],
     },
-    # Used if you ever want next-steps before a user chooses a state
     "Unsure": {
         "Clarify": [
             "Pick the closest state first, then choose one micro-step.",
@@ -259,17 +258,13 @@ def record_feedback(state: str, lane: str, action: str, is_helpful: bool):
 
 
 def score_action(state: str, lane: str, action: str) -> int:
-    """
-    Simple session-based preference score.
-    Positive feedback bumps options up; negative feedback nudges down.
-    """
     stats = st.session_state["step_feedback"].get(_fb_key(state, lane, action), {"up": 0, "down": 0})
     return int(stats["up"]) - int(stats["down"])
 
 
 def render_next_step(chosen_state: str, mode: str):
     st.markdown("### Next step")
-    st.caption("Choose one small action. This is a suggestion, not a prescription.")
+    st.caption("Pick one small action. You’re in charge — this is a menu, not a mandate.")
 
     library = NEXT_STEPS.get(chosen_state, NEXT_STEPS["Unsure"])
     lanes = list(library.keys())
@@ -277,30 +272,16 @@ def render_next_step(chosen_state: str, mode: str):
     lane = st.selectbox("Pick a lane", lanes, index=0, key=f"lane_{mode}_{chosen_state}")
     actions = library[lane]
 
-    # Reorder actions using feedback score (higher first), stable within session
     actions_sorted = sorted(actions, key=lambda a: score_action(chosen_state, lane, a), reverse=True)
+    action = st.radio("Pick one micro-action", actions_sorted, index=0, key=f"action_{mode}_{chosen_state}")
 
-    action = st.radio(
-        "Pick one micro-action",
-        actions_sorted,
-        index=0,
-        key=f"action_{mode}_{chosen_state}",
-    )
-
-    # Show subtle note if action ordering is influenced by feedback
-    top_score = score_action(chosen_state, lane, actions_sorted[0])
-    if top_score != 0:
-        st.caption("Ordered using your feedback in this session.")
-
-    c1, c2, c3, c4 = st.columns([1, 1, 1, 1])
+    c1, c2, c3 = st.columns(3)
     minutes = c1.selectbox("Time-box", [1, 2, 5, 10, 15], index=1, key=f"mins_{mode}_{chosen_state}")
     start = c2.button("Start now", key=f"start_{mode}_{chosen_state}")
     log = c3.button("Log this", key=f"log_{mode}_{chosen_state}")
-    clear = c4.button("Clear log", key="clear_step_log")
 
     if start:
-        st.info(f"Timer started: {minutes} minute(s). Do: **{action}**")
-        st.caption("If it feels like too much, reduce the step—not your self-worth.")
+        st.info(f"Try this for {minutes} minute(s): **{action}**")
 
     if log:
         st.session_state["step_log"].append(
@@ -308,58 +289,29 @@ def render_next_step(chosen_state: str, mode: str):
         )
         st.success("Logged.")
 
-    if clear:
-        st.session_state["step_log"] = []
-        st.session_state["step_feedback"] = {}
-        st.success("Cleared step log + feedback for this session.")
-        st.rerun()
-
-    # Feedback buttons (adaptive learning - session-based)
-    st.markdown("#### Quick feedback (optional)")
-    st.caption("This reorders suggestions in this session only.")
+    st.markdown("#### Feedback (optional)")
+    st.caption("This only affects ordering during this session.")
 
     f1, f2, f3 = st.columns([1, 1, 2])
     if f1.button("👍 Helped", key=f"fb_up_{mode}_{chosen_state}_{lane}"):
         record_feedback(chosen_state, lane, action, is_helpful=True)
-        st.success("Thanks — I’ll surface options like that more in this session.")
+        st.success("Noted — I’ll surface options like that more (this session).")
         st.rerun()
 
     if f2.button("👎 Not for me", key=f"fb_down_{mode}_{chosen_state}_{lane}"):
         record_feedback(chosen_state, lane, action, is_helpful=False)
-        st.info("Got it — I’ll de-emphasize that option in this session.")
+        st.info("Got it — I’ll de-emphasize that option (this session).")
         st.rerun()
 
-    # Session log + export
     if st.session_state.get("step_log"):
         with st.expander("Your step log (this session)"):
             log_df = pd.DataFrame(st.session_state["step_log"])
             st.dataframe(log_df, use_container_width=True)
-
             csv = log_df.to_csv(index=False).encode("utf-8")
             st.download_button(
                 "Download log as CSV",
                 data=csv,
                 file_name="syncstate_next_steps_log.csv",
-                mime="text/csv",
-            )
-
-    # Optional: export feedback too (nice for case studies)
-    with st.expander("Feedback data (this session)"):
-        fb = st.session_state.get("step_feedback", {})
-        if not fb:
-            st.caption("No feedback recorded yet.")
-        else:
-            fb_rows = []
-            for k, v in fb.items():
-                s, l, a = k.split("|", 2)
-                fb_rows.append({"state": s, "lane": l, "action": a, "helped": v["up"], "not_for_me": v["down"], "score": v["up"] - v["down"]})
-            fb_df = pd.DataFrame(fb_rows).sort_values(["score", "helped"], ascending=False)
-            st.dataframe(fb_df, use_container_width=True)
-            fb_csv = fb_df.to_csv(index=False).encode("utf-8")
-            st.download_button(
-                "Download feedback as CSV",
-                data=fb_csv,
-                file_name="syncstate_next_steps_feedback.csv",
                 mime="text/csv",
             )
 
@@ -369,59 +321,57 @@ def render_next_step(chosen_state: str, mode: str):
 # -----------------------------
 st.set_page_config(page_title="SYNCstate ANN", layout="centered")
 st.title("SYNCstate ANN — Humble Reflection Demo")
-st.caption(
-    "A calibrated ANN demo that adapts its response style based on uncertainty—supporting reflection, not replacing judgment."
-)
+
+if PUBLIC_DEMO:
+    st.info(
+        "Public demo build: internal datasets and training details are intentionally hidden. "
+        "This demo showcases confidence-aware UX, not clinical inference."
+    )
 
 with st.expander("What this is (and isn’t)"):
     st.markdown(
         """
 - **Not a diagnosis. Not medical advice.**
-- Offers **reflection prompts**, not instructions.
+- Offers **reflection prompts** and **micro-actions**, not instructions.
 - Uses **uncertainty** to avoid pretending it knows.
 - If someone is unsafe, the correct response is **human help**, not AI output.
 """
     )
 
 df_raw = load_data(DATA_PATH)
-st.success(f"Loaded dataset: {DATA_PATH}")
+st.success("Dataset loaded.")
 
-with st.expander("Dataset preview"):
-    st.dataframe(df_raw.head(12), use_container_width=True)
-    st.write("Columns:", list(df_raw.columns))
+# Hide dataset preview + training internals in public demo mode
+if not PUBLIC_DEMO:
+    with st.expander("Dataset preview"):
+        st.dataframe(df_raw.head(12), use_container_width=True)
+        st.write("Columns:", list(df_raw.columns))
 
 model, report, cm, df_clean = train_model(df_raw)
 
-with st.expander("Training summary"):
-    st.write("Rows used:", len(df_clean))
-    st.write("State distribution:")
-    st.write(df_clean["state"].value_counts())
-    st.text(report)
-    st.write("Confusion matrix:")
-    st.write(pd.DataFrame(cm, index=STATES, columns=STATES))
+if not PUBLIC_DEMO:
+    with st.expander("Training summary"):
+        st.write("Rows used:", len(df_clean))
+        st.write("State distribution:")
+        st.write(df_clean["state"].value_counts())
+        st.text(report)
+        st.write("Confusion matrix:")
+        st.write(pd.DataFrame(cm, index=STATES, columns=STATES))
 
 st.divider()
-st.subheader("How you feeling today?")
+st.subheader("Try a new check-in")
 
-
-# -----------------------------
-# Presets that MOVE SLIDERS + force demo modes
-# -----------------------------
-st.markdown("#### Quick demo presets")
+# Presets (no extra copy)
 p1, p2, p3, p4 = st.columns(4)
 
-
 def apply_preset(vals: dict, override: str):
-    # Set widget state directly (sliders have keys)
     st.session_state["energy"] = vals["energy"]
     st.session_state["stress"] = vals["stress"]
     st.session_state["focus"] = vals["focus"]
     st.session_state["tension"] = vals["tension"]
     st.session_state["sleep"] = vals["sleep"]
-    # Set override so the UX mode matches preset
     st.session_state["demo_override"] = override
     st.rerun()
-
 
 if p1.button("Preset: Unsure"):
     apply_preset({"energy": 4, "stress": 2, "focus": 1, "tension": 4, "sleep": 5}, override="unsure")
@@ -436,8 +386,7 @@ if p4.button("Auto mode"):
     st.session_state["demo_override"] = "auto"
     st.rerun()
 
-
-# Sliders (keys must match apply_preset)
+# Sliders
 c1, c2, c3, c4, c5 = st.columns(5)
 energy = c1.slider("Energy", 1, 5, 3, key="energy")
 stress = c2.slider("Stress", 1, 5, 3, key="stress")
@@ -448,8 +397,6 @@ sleep = c5.slider("Sleep", 1, 5, 3, key="sleep")
 unsafe_flag = st.checkbox("I’m not safe / I need urgent help right now")
 run = st.button("Run SYNCstate")
 
-
-# On click: compute + store result, then rerun
 if run:
     if unsafe_flag:
         st.error("You indicated you’re not safe. This demo can’t help with emergencies.")
@@ -458,45 +405,29 @@ if run:
         st.stop()
 
     X_new = np.array([[energy, stress, focus, tension, sleep]], dtype=float)
-
     proba = model.predict_proba(X_new)[0]
     pred_idx = int(np.argmax(proba))
     pred_state = STATES[pred_idx]
     conf = float(np.max(proba))
 
-    dist = pd.DataFrame({"state": STATES, "probability": proba}).sort_values(
-        "probability", ascending=False
-    )
+    dist = pd.DataFrame({"state": STATES, "probability": proba}).sort_values("probability", ascending=False)
 
     st.session_state["sync_result"] = {"pred_state": pred_state, "conf": conf, "dist": dist}
-    st.session_state["last_inputs"] = {
-        "energy": energy,
-        "stress": stress,
-        "focus": focus,
-        "tension": tension,
-        "sleep": sleep,
-    }
-
+    st.session_state["last_inputs"] = {"energy": energy, "stress": stress, "focus": focus, "tension": tension, "sleep": sleep}
     st.rerun()
 
-
-# -----------------------------
-# Render results if we have them
-# -----------------------------
+# Render results
 result = st.session_state.get("sync_result")
 if result is not None:
     pred_state = result["pred_state"]
     conf = result["conf"]
     dist = result["dist"]
 
-    # Auto mode from confidence
     mode = pick_mode(conf)
-
-    # Demo override (safe)
     override = st.session_state.get("demo_override", "auto")
     if override != "auto":
         mode = override
-        st.caption("Demo override is ON (interaction style forced for screenshots).")
+        st.caption("Demo override is ON (interaction style forced).")
 
     st.markdown("### Result")
     st.write("Inputs used:", st.session_state.get("last_inputs"))
@@ -517,7 +448,6 @@ if result is not None:
         st.write("**Prompt:** " + np.random.choice(PROMPTS["Unsure"]))
         choice = st.radio("Which feels closest right now?", STATES, index=0, key="unsure_choice")
         st.write("**Next prompt:** " + np.random.choice(PROMPTS[choice]))
-
         chosen_state = choice
         render_next_step(chosen_state, mode)
 
@@ -528,14 +458,12 @@ if result is not None:
         choice = st.radio("Which feels closer?", top2, index=0, key="leaning_choice")
         st.write("You selected:", choice)
         st.write("**Prompt:** " + np.random.choice(PROMPTS[choice]))
-
         chosen_state = choice
         render_next_step(chosen_state, mode)
 
     else:
         st.success("Confident enough to suggest a reflection prompt (still not a judgment).")
         st.write("**Prompt:** " + np.random.choice(PROMPTS[pred_state]))
-
         chosen_state = pred_state
         render_next_step(chosen_state, mode)
 
