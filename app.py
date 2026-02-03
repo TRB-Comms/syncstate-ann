@@ -422,13 +422,13 @@ def apply_preset(vals: dict, override: str):
     st.session_state["demo_override"] = override
     st.rerun()
 
-if p1.button("Explore uncertainty"):
+if p1.button("Unsure"):
     apply_preset({"energy": 4, "stress": 2, "focus": 1, "tension": 4, "sleep": 5}, override="unsure")
 
-if p2.button("Explore mixed signals"):
+if p2.button("Leaning"):
     apply_preset({"energy": 3, "stress": 4, "focus": 3, "tension": 3, "sleep": 4}, override="leaning")
 
-if p3.button("Explore clearer signal"):
+if p3.button("Suggest"):
     apply_preset({"energy": 4, "stress": 5, "focus": 2, "tension": 5, "sleep": 1}, override="suggest")
 
 if p4.button("Automatic"):
