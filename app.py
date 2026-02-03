@@ -360,7 +360,7 @@ if not PUBLIC_DEMO:
 
 st.divider()
 st.subheader("How are you doing today?")
-st.caption("Move the sliders to reflect how things feel right now.")
+st.caption("Let Tee know how things feel right now. Move the slider from 1-5 with 5 being great.")
 
 # Presets (no extra copy)
 p1, p2, p3, p4 = st.columns(4)
