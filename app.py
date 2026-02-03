@@ -396,7 +396,8 @@ tension = c4.slider("Tension", 1, 5, 3, key="tension")
 sleep = c5.slider("Sleep", 1, 5, 3, key="sleep")
 
 unsafe_flag = st.checkbox("I’m not safe / I need urgent help right now")
-run = st.button("Run SYNCstate")
+run = st.button("Check my vibe")
+st.caption("Staying aware is your first step.")
 
 if run:
     if unsafe_flag:
