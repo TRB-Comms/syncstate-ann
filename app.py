@@ -381,7 +381,7 @@ if not PUBLIC_DEMO:
 
 st.divider()
 st.subheader("How are you feeling today?")
-st.caption("Use the sliders to reflect how things feel right now. There’s no right answer.")
+st.caption("Let Tee know how things feel right now. 1 is not so good and 5 is great")
 
 # Presets
 p1, p2, p3, p4 = st.columns(4)
@@ -416,7 +416,7 @@ focus = c3.slider("Focus", 1, 5, 3, key="focus")
 tension = c4.slider("Tension", 1, 5, 3, key="tension")
 sleep = c5.slider("Sleep", 1, 5, 3, key="sleep")
 
-unsafe_flag = st.checkbox("I’m not safe / I need urgent help right now")
+unsafe_flag = st.checkbox("I’m not safe / I need help now")
 checkin = st.button("Check my vibe")
 
 if checkin:
