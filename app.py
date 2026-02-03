@@ -55,26 +55,39 @@ RAW_REQUIRED = [
     "wellbeing_state",
 ]
 
+# -----------------------------
+# Copy-polished prompt library
+# -----------------------------
 PROMPTS = {
     "Balanced": [
-        "What’s working that you want to protect today?",
-        "What’s one small choice that keeps you steady?",
+        "What’s working right now that you’d like to keep steady?",
+        "What’s one small choice that helps you stay grounded today?",
+        "If you protect one thing today, what should it be?",
+        "What do you want more of this week: ease, focus, connection, or rest?",
     ],
     "Elevated": [
-        "Where can you aim this energy gently—without overcommitting?",
-        "What’s the smallest ‘next’ that still feels exciting?",
+        "Where could you aim this energy gently—without taking on too much?",
+        "What’s the smallest next step that still feels meaningful?",
+        "What would help you keep momentum without burning out?",
+        "If you slowed down by 10%, what would you do differently?",
     ],
     "Overloaded": [
-        "What’s the one thing you can release or postpone today?",
-        "What would ‘enough’ look like for the next 2 hours?",
+        "For the next couple of hours, what would feel good enough—not perfect?",
+        "What’s the smallest version of ‘enough’ you’d be okay with right now?",
+        "What’s one thing you can release, postpone, or simplify today?",
+        "What would make the next part of today feel more manageable?",
     ],
     "Disconnected": [
-        "Do you feel more shut down or more scattered right now?",
-        "What’s one grounding cue you can try for 60 seconds?",
+        "Do you feel more numb/flat, or more scattered and distant?",
+        "What’s one small cue that helps you feel more here—right now?",
+        "If your body could ask for one thing, what might it be?",
+        "What’s the gentlest way to reconnect: movement, water, light, or a message to someone safe?",
     ],
     "Unsure": [
-        "I might be off. Which feels closer: steady, elevated, overloaded, or disconnected?",
-        "Quick check: does your body feel tense, or more numb/flat?",
+        "I might be off. Which feels closer right now: steady, elevated, overloaded, or disconnected?",
+        "If you had to name the main signal: tiredness, pressure, stress, or numbness—what would it be?",
+        "What would help most in this moment: clarity, relief, connection, or rest?",
+        "If none of the labels fit, what word *does* fit right now?",
     ],
 }
 
@@ -264,52 +277,52 @@ def score_action(state: str, lane: str, action: str) -> int:
 
 def render_next_step(chosen_state: str, mode: str):
     st.markdown("### If you want, try one small next step")
-    st.caption("Think of this as an experiment — you can adjust or ignore anything here.")
+    st.caption("Think of this as an experiment. You can adjust, skip, or choose your own step.")
 
     library = NEXT_STEPS.get(chosen_state, NEXT_STEPS["Unsure"])
     lanes = list(library.keys())
 
-    lane = st.selectbox("Pick a lane", lanes, index=0, key=f"lane_{mode}_{chosen_state}")
+    lane = st.selectbox("Pick what you need most", lanes, index=0, key=f"lane_{mode}_{chosen_state}")
     actions = library[lane]
 
     actions_sorted = sorted(actions, key=lambda a: score_action(chosen_state, lane, a), reverse=True)
-    action = st.radio("Pick one micro-action", actions_sorted, index=0, key=f"action_{mode}_{chosen_state}")
+    action = st.radio("Choose one option", actions_sorted, index=0, key=f"action_{mode}_{chosen_state}")
 
     c1, c2, c3 = st.columns(3)
     minutes = c1.selectbox("Time-box", [1, 2, 5, 10, 15], index=1, key=f"mins_{mode}_{chosen_state}")
-    start = c2.button("Start now", key=f"start_{mode}_{chosen_state}")
-    log = c3.button("Log this", key=f"log_{mode}_{chosen_state}")
+    start = c2.button("Start", key=f"start_{mode}_{chosen_state}")
+    log = c3.button("Save", key=f"log_{mode}_{chosen_state}")
 
     if start:
-        st.info(f"Try this for {minutes} minute(s): **{action}**")
+        st.info(f"For {minutes} minute(s), try: **{action}**")
 
     if log:
         st.session_state["step_log"].append(
             {"state": chosen_state, "lane": lane, "action": action, "minutes": minutes}
         )
-        st.success("Logged.")
+        st.success("Saved.")
 
     st.markdown("#### Was this helpful?")
-    st.caption("This only affects suggestions during this session.")
+    st.caption("This only changes what shows up first during this session.")
 
-    f1, f2, f3 = st.columns([1, 1, 2])
-    if f1.button("👍 Helped", key=f"fb_up_{mode}_{chosen_state}_{lane}"):
+    f1, f2, _ = st.columns([1, 1, 2])
+    if f1.button("👍 Yes", key=f"fb_up_{mode}_{chosen_state}_{lane}"):
         record_feedback(chosen_state, lane, action, is_helpful=True)
-        st.success("Noted — I’ll surface options like that more (this session).")
+        st.success("Thanks — I’ll show more options like that first.")
         st.rerun()
 
-    if f2.button("👎 Not for me", key=f"fb_down_{mode}_{chosen_state}_{lane}"):
+    if f2.button("👎 Not really", key=f"fb_down_{mode}_{chosen_state}_{lane}"):
         record_feedback(chosen_state, lane, action, is_helpful=False)
-        st.info("Got it — I’ll de-emphasize that option (this session).")
+        st.info("Got it — I’ll move that option lower next time.")
         st.rerun()
 
     if st.session_state.get("step_log"):
-        with st.expander("Your step log (this session)"):
+        with st.expander("Your saved steps (this session)"):
             log_df = pd.DataFrame(st.session_state["step_log"])
             st.dataframe(log_df, use_container_width=True)
             csv = log_df.to_csv(index=False).encode("utf-8")
             st.download_button(
-                "Download log as CSV",
+                "Download as CSV",
                 data=csv,
                 file_name="syncstate_next_steps_log.csv",
                 mime="text/csv",
@@ -319,27 +332,35 @@ def render_next_step(chosen_state: str, mode: str):
 # -----------------------------
 # UI
 # -----------------------------
-st.set_page_config(page_title="SYNCstate ANN", layout="centered")
-st.title("SYNCstate ANN — Humble Reflection Demo")
+st.set_page_config(page_title="SYNCstate", layout="centered")
+st.title("SYNCstate")
+st.caption("A gentle check-in to support reflection — not diagnosis or advice.")
 
 if PUBLIC_DEMO:
     st.info(
-        "Public demo build: internal datasets and training details are intentionally hidden. "
-        "This demo showcases confidence-aware UX, not clinical inference."
+        "This is a demonstration experience using representative, non-identifiable data. "
+        "It shows how uncertainty-aware AI can support reflection — not make judgments."
     )
 
-with st.expander("What this is (and isn’t)"):
+with st.expander("What this is — and what it isn’t"):
     st.markdown(
         """
-- **Not a diagnosis. Not medical advice.**
-- Offers **reflection prompts** and **micro-actions**, not instructions.
-- Uses **uncertainty** to avoid pretending it knows.
-- If someone is unsafe, the correct response is **human help**, not AI output.
+**What this is**
+- A brief self-check to help you notice patterns
+- A pause for reflection when things feel fuzzy
+- An example of AI that knows when *not* to be certain
+
+**What this isn’t**
+- Not a diagnosis or medical assessment
+- Not a replacement for human support or judgment
+- Not advice — you always choose what fits
+
+If you’re feeling unsafe or in crisis, the right next step is human help.
 """
     )
 
 df_raw = load_data(DATA_PATH)
-st.success("Dataset loaded.")
+st.success("Ready.")
 
 # Hide dataset preview + training internals in public demo mode
 if not PUBLIC_DEMO:
@@ -359,10 +380,10 @@ if not PUBLIC_DEMO:
         st.write(pd.DataFrame(cm, index=STATES, columns=STATES))
 
 st.divider()
-st.subheader("How are you doing today?")
-st.caption("Let Tee know how things feel right now. Move the slider from 1-5 with 5 being great.")
+st.subheader("How are you feeling today?")
+st.caption("Use the sliders to reflect how things feel right now. There’s no right answer.")
 
-# Presets (no extra copy)
+# Presets
 p1, p2, p3, p4 = st.columns(4)
 
 def apply_preset(vals: dict, override: str):
@@ -374,16 +395,16 @@ def apply_preset(vals: dict, override: str):
     st.session_state["demo_override"] = override
     st.rerun()
 
-if p1.button("Preset: Unsure"):
+if p1.button("Explore uncertainty"):
     apply_preset({"energy": 4, "stress": 2, "focus": 1, "tension": 4, "sleep": 5}, override="unsure")
 
-if p2.button("Preset: Leaning"):
+if p2.button("Explore mixed signals"):
     apply_preset({"energy": 3, "stress": 4, "focus": 3, "tension": 3, "sleep": 4}, override="leaning")
 
-if p3.button("Preset: Suggest"):
+if p3.button("Explore clearer signal"):
     apply_preset({"energy": 4, "stress": 5, "focus": 2, "tension": 5, "sleep": 1}, override="suggest")
 
-if p4.button("Auto mode"):
+if p4.button("Automatic"):
     st.session_state["demo_override"] = "auto"
     st.rerun()
 
@@ -396,13 +417,11 @@ tension = c4.slider("Tension", 1, 5, 3, key="tension")
 sleep = c5.slider("Sleep", 1, 5, 3, key="sleep")
 
 unsafe_flag = st.checkbox("I’m not safe / I need urgent help right now")
-run = st.button("Check my vibe")
-st.caption("Staying aware is your first step.")
+checkin = st.button("Check my vibe")
 
-if run:
+if checkin:
     if unsafe_flag:
-        st.error("You indicated you’re not safe. This demo can’t help with emergencies.")
-        st.markdown("If you're in immediate danger, call your local emergency number.")
+        st.error("If you're in immediate danger, please contact emergency help right now.")
         st.markdown("In the U.S., you can call or text **988** (Suicide & Crisis Lifeline).")
         st.stop()
 
@@ -429,43 +448,53 @@ if result is not None:
     override = st.session_state.get("demo_override", "auto")
     if override != "auto":
         mode = override
-        st.caption("Demo override is ON (interaction style forced).")
+        st.caption("Demo mode: showing a specific interaction style.")
 
-    st.markdown("### Result")
+    st.markdown("### What this check-in noticed")
     st.write("Inputs used:", st.session_state.get("last_inputs"))
-    st.write(f"**What the model leans toward (not a label):** {pred_state}")
-    st.write(f"**Confidence (calibrated):** {conf:.2f}")
+    st.write(f"**Possible state this resembles:** {pred_state}")
+    st.write(f"**How confident the system is:** {conf:.2f}")
 
     if mode == "unsure":
-        st.caption("This signal is shown for transparency, not as a final assessment.")
+        st.caption("This is shown for transparency — not as a final assessment.")
 
     chart_df = dist.set_index("state")[["probability"]]
     st.bar_chart(chart_df)
-    st.caption("This shows likelihoods, not labels. You decide what fits.")
+    st.caption("These are likelihoods, not labels. You decide what fits — or if none do.")
 
-    st.markdown("### Humility-aware response")
+    st.markdown("### A reflective response")
 
     if mode == "unsure":
-        st.info("I might be off here. Rather than label your state, I’ll pause and ask for your perspective.")
-        st.write("**Prompt:** " + np.random.choice(PROMPTS["Unsure"]))
+        st.info(
+            "The system isn’t confident enough to name a state here. "
+            "Instead of guessing, it’s pausing and asking for your perspective."
+        )
+        st.caption("You don’t need to answer perfectly — just notice what comes up.")
+        st.write("**Question:** " + np.random.choice(PROMPTS["Unsure"]))
         choice = st.radio("Which feels closest right now?", STATES, index=0, key="unsure_choice")
-        st.write("**Next prompt:** " + np.random.choice(PROMPTS[choice]))
+        st.write("**Follow-up question:** " + np.random.choice(PROMPTS[choice]))
         chosen_state = choice
         render_next_step(chosen_state, mode)
 
     elif mode == "leaning":
-        st.warning("Leaning toward a state, but not certain. I’ll offer choices rather than a single answer.")
+        st.warning(
+            "There’s a signal here, but it’s mixed. Rather than choose for you, "
+            "the system offers a couple of possibilities."
+        )
         top2 = dist.head(2)["state"].tolist()
-        st.write(f"Top possibilities: **{top2[0]}** or **{top2[1]}**")
+        st.write(f"Two possibilities: **{top2[0]}** or **{top2[1]}**")
         choice = st.radio("Which feels closer?", top2, index=0, key="leaning_choice")
-        st.write("You selected:", choice)
-        st.write("**Prompt:** " + np.random.choice(PROMPTS[choice]))
+        st.caption("You don’t need to answer perfectly — just notice what comes up.")
+        st.write("**Question:** " + np.random.choice(PROMPTS[choice]))
         chosen_state = choice
         render_next_step(chosen_state, mode)
 
     else:
-        st.success("Confident enough to suggest a reflection prompt (still not a judgment).")
-        st.write("**Prompt:** " + np.random.choice(PROMPTS[pred_state]))
+        st.success(
+            "The signal is clearer here, so here’s a gentle question you might reflect on."
+        )
+        st.caption("You don’t need to answer perfectly — just notice what comes up.")
+        st.write("**Question:** " + np.random.choice(PROMPTS[pred_state]))
         chosen_state = pred_state
         render_next_step(chosen_state, mode)
 
