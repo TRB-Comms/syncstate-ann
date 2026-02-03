@@ -56,86 +56,113 @@ RAW_REQUIRED = [
 ]
 
 # -----------------------------
-# Copy-polished prompt library
+# Music-aware prompt library (copy-polished)
 # -----------------------------
 PROMPTS = {
     "Balanced": [
-        "What’s working right now that you’d like to keep steady?",
-        "What’s one small choice that helps you stay grounded today?",
-        "If you protect one thing today, what should it be?",
-        "What do you want more of this week: ease, focus, connection, or rest?",
+        "What part of your rhythm feels steady right now—and worth protecting?",
+        "If today had a tempo, what pace keeps you grounded?",
+        "What’s one thing you’re doing that helps you stay in time with yourself?",
+        "What would help you keep this groove without overextending?",
     ],
     "Elevated": [
-        "Where could you aim this energy gently—without taking on too much?",
-        "What’s the smallest next step that still feels meaningful?",
-        "What would help you keep momentum without burning out?",
-        "If you slowed down by 10%, what would you do differently?",
+        "Your tempo feels higher—where can you aim that energy without speeding into burnout?",
+        "What’s the smallest ‘next note’ you can play that still moves things forward?",
+        "If you slowed down by 10%, what would you keep—and what would you drop?",
+        "What helps you stay expressive without adding more tracks than you can mix?",
     ],
     "Overloaded": [
-        "For the next couple of hours, what would feel good enough—not perfect?",
-        "What’s the smallest version of ‘enough’ you’d be okay with right now?",
-        "What’s one thing you can release, postpone, or simplify today?",
-        "What would make the next part of today feel more manageable?",
+        "It may be time to simplify the arrangement—what can come out of the mix for now?",
+        "For the next couple of hours, what would ‘good enough’ sound like—not perfect?",
+        "If you reduced the tempo slightly, what would feel more manageable?",
+        "What’s one boundary that gives you breathing room today?",
     ],
     "Disconnected": [
-        "Do you feel more numb/flat, or more scattered and distant?",
-        "What’s one small cue that helps you feel more here—right now?",
-        "If your body could ask for one thing, what might it be?",
-        "What’s the gentlest way to reconnect: movement, water, light, or a message to someone safe?",
+        "Do you feel muted (numb/flat) or scattered (out of sync)?",
+        "What’s one small cue that helps you feel more present—right now?",
+        "If your body could pick the next note, would it ask for rest, water, movement, or connection?",
+        "What’s a gentle way to tune back in—without forcing it?",
     ],
     "Unsure": [
-        "I might be off. Which feels closer right now: steady, elevated, overloaded, or disconnected?",
-        "If you had to name the main signal: tiredness, pressure, stress, or numbness—what would it be?",
+        "The signal is unclear—what feels closest: steady, elevated, overloaded, or disconnected?",
+        "If you named the main signal: pressure, tiredness, stress, or numbness—what fits best?",
         "What would help most in this moment: clarity, relief, connection, or rest?",
-        "If none of the labels fit, what word *does* fit right now?",
+        "If none of the labels fit, what word does fit right now?",
     ],
 }
 
+# -----------------------------
+# B.E.A.Tsyncro-aligned next steps (Vibes / Restore / Support)
+# -----------------------------
 NEXT_STEPS = {
     "Balanced": {
-        "Protect": [
-            "Name one thing you want to protect today (10 seconds).",
-            "Choose one boundary: stop time / break time / screen-off time.",
+        "Vibes": [
+            "Pick one ‘keep it steady’ intention for today (10 seconds).",
+            "Choose a tempo for the next hour: slow / medium / focused.",
         ],
-        "Grow": [
-            "Pick one small ‘next’ that feels light (2 minutes).",
-            "Write one sentence: ‘Today counts even if…’",
+        "Restore": [
+            "Take 5 deep breaths—then unclench jaw and drop shoulders.",
+            "Drink water. Small reset. No story needed.",
+        ],
+        "Support": [
+            "Send a quick message: ‘I’m doing okay—just checking in.’",
+            "Name one boundary that protects your groove today.",
         ],
     },
     "Elevated": {
-        "Channel": [
-            "Pick ONE priority for the next 30 minutes (not three).",
-            "Set a 10-minute timer and start the smallest step.",
+        "Vibes": [
+            "Choose ONE priority track for the next 30 minutes—ignore the rest.",
+            "Set a 10-minute timer and start the smallest step (one bar at a time).",
         ],
-        "Soften": [
-            "Do 3 slow exhales, then decide what can wait.",
-            "Drink water and stretch your shoulders for 30 seconds.",
+        "Restore": [
+            "Do 60 seconds of slow breathing (long exhale).",
+            "Stand, stretch shoulders/neck, and relax your hands (30 seconds).",
+        ],
+        "Support": [
+            "Say no to one thing that isn’t essential today.",
+            "Ask someone: ‘Can you help me choose what matters most?’",
         ],
     },
     "Overloaded": {
-        "Reduce": [
-            "Write your top 3 tasks and postpone ONE.",
-            "Choose ‘minimum viable’ for the next hour.",
+        "Vibes": [
+            "Simplify the arrangement: write 3 tasks and postpone ONE.",
+            "Define ‘good enough’ for the next hour in one sentence.",
         ],
-        "Recover": [
-            "60 seconds: unclench jaw, drop shoulders, slow breathing.",
-            "Stand and walk for 90 seconds.",
+        "Restore": [
+            "90 seconds: walk, shake out arms, drop shoulders, breathe out long.",
+            "Eat something small or drink water—fuel counts.",
+        ],
+        "Support": [
+            "Message one safe person: ‘I’m overloaded. Can I borrow 2 minutes?’",
+            "Choose a boundary: no new requests for the next 2 hours.",
         ],
     },
     "Disconnected": {
-        "Reconnect": [
-            "5-4-3-2-1 grounding: name 5 things you see…",
-            "Touch something textured and describe it for 20 seconds.",
+        "Vibes": [
+            "Name what’s true: muted, scattered, heavy, foggy, or flat.",
+            "Pick one sensory anchor: light / sound / touch / temperature.",
+        ],
+        "Restore": [
+            "5-4-3-2-1 grounding: 5 things you see…",
+            "Cold water on hands or face (10 seconds) + slow exhale.",
         ],
         "Support": [
-            "Message one safe person: ‘Can I borrow 2 minutes?’",
-            "Write one sentence about what you feel (no fixing).",
+            "Reach out with one sentence: ‘I’m not myself today.’",
+            "If talking feels hard: write one sentence about how you feel (no fixing).",
         ],
     },
     "Unsure": {
-        "Clarify": [
-            "Pick the closest state first, then choose one micro-step.",
-            "What’s loudest right now: stress, tiredness, pressure, or numbness?",
+        "Vibes": [
+            "Choose the closest state first—then pick one micro-step from it.",
+            "What’s loudest: pressure, tiredness, stress, or numbness?",
+        ],
+        "Restore": [
+            "Do one body check: shoulders, jaw, breath—release one.",
+            "Drink water and take one slow minute.",
+        ],
+        "Support": [
+            "Ask: ‘Can someone sit with me for a minute?’ (text counts).",
+            "If you’re alone: name one thing that would feel supportive right now.",
         ],
     },
 }
@@ -277,16 +304,16 @@ def score_action(state: str, lane: str, action: str) -> int:
 
 def render_next_step(chosen_state: str, mode: str):
     st.markdown("### If you want, try one small next step")
-    st.caption("Think of this as an experiment. You can adjust, skip, or choose your own step.")
+    st.caption("Think of this like a tiny adjustment in tempo or tone. You’re in charge.")
 
     library = NEXT_STEPS.get(chosen_state, NEXT_STEPS["Unsure"])
     lanes = list(library.keys())
 
-    lane = st.selectbox("Pick what you need most", lanes, index=0, key=f"lane_{mode}_{chosen_state}")
+    lane = st.selectbox("What would help most right now?", lanes, index=0, key=f"lane_{mode}_{chosen_state}")
     actions = library[lane]
 
     actions_sorted = sorted(actions, key=lambda a: score_action(chosen_state, lane, a), reverse=True)
-    action = st.radio("Choose one option", actions_sorted, index=0, key=f"action_{mode}_{chosen_state}")
+    action = st.radio("Pick one small step", actions_sorted, index=0, key=f"action_{mode}_{chosen_state}")
 
     c1, c2, c3 = st.columns(3)
     minutes = c1.selectbox("Time-box", [1, 2, 5, 10, 15], index=1, key=f"mins_{mode}_{chosen_state}")
@@ -308,7 +335,7 @@ def render_next_step(chosen_state: str, mode: str):
     f1, f2, _ = st.columns([1, 1, 2])
     if f1.button("👍 Yes", key=f"fb_up_{mode}_{chosen_state}_{lane}"):
         record_feedback(chosen_state, lane, action, is_helpful=True)
-        st.success("Thanks — I’ll show more options like that first.")
+        st.success("Thanks — I’ll surface options like that first.")
         st.rerun()
 
     if f2.button("👎 Not really", key=f"fb_down_{mode}_{chosen_state}_{lane}"):
@@ -381,7 +408,7 @@ if not PUBLIC_DEMO:
 
 st.divider()
 st.subheader("How are you feeling today?")
-st.caption("Let Tee know how things feel right now. 1 is not so good and 5 is great")
+st.caption("Use the sliders to let Tee know how you're feeling, 5 being very goo and 1, not good at all.")
 
 # Presets
 p1, p2, p3, p4 = st.columns(4)
@@ -395,13 +422,13 @@ def apply_preset(vals: dict, override: str):
     st.session_state["demo_override"] = override
     st.rerun()
 
-if p1.button("Unsure"):
+if p1.button("Explore uncertainty"):
     apply_preset({"energy": 4, "stress": 2, "focus": 1, "tension": 4, "sleep": 5}, override="unsure")
 
-if p2.button("Lean"):
+if p2.button("Explore mixed signals"):
     apply_preset({"energy": 3, "stress": 4, "focus": 3, "tension": 3, "sleep": 4}, override="leaning")
 
-if p3.button("Suggest"):
+if p3.button("Explore clearer signal"):
     apply_preset({"energy": 4, "stress": 5, "focus": 2, "tension": 5, "sleep": 1}, override="suggest")
 
 if p4.button("Automatic"):
@@ -416,7 +443,7 @@ focus = c3.slider("Focus", 1, 5, 3, key="focus")
 tension = c4.slider("Tension", 1, 5, 3, key="tension")
 sleep = c5.slider("Sleep", 1, 5, 3, key="sleep")
 
-unsafe_flag = st.checkbox("I’m not safe / I need help now")
+unsafe_flag = st.checkbox("I’m not safe / I need urgent help right now")
 checkin = st.button("Check my vibe")
 
 if checkin:
@@ -434,7 +461,13 @@ if checkin:
     dist = pd.DataFrame({"state": STATES, "probability": proba}).sort_values("probability", ascending=False)
 
     st.session_state["sync_result"] = {"pred_state": pred_state, "conf": conf, "dist": dist}
-    st.session_state["last_inputs"] = {"energy": energy, "stress": stress, "focus": focus, "tension": tension, "sleep": sleep}
+    st.session_state["last_inputs"] = {
+        "energy": energy,
+        "stress": stress,
+        "focus": focus,
+        "tension": tension,
+        "sleep": sleep,
+    }
     st.rerun()
 
 # Render results
@@ -465,11 +498,8 @@ if result is not None:
     st.markdown("### A reflective response")
 
     if mode == "unsure":
-        st.info(
-            "The system isn’t confident enough to name a state here. "
-            "Instead of guessing, it’s pausing and asking for your perspective."
-        )
-        st.caption("You don’t need to answer perfectly — just notice what comes up.")
+        st.info("It’s not clear enough to name this confidently—so we’ll pause and check in with you instead.")
+        st.caption("You don’t need to answer perfectly—just notice what comes up.")
         st.write("**Question:** " + np.random.choice(PROMPTS["Unsure"]))
         choice = st.radio("Which feels closest right now?", STATES, index=0, key="unsure_choice")
         st.write("**Follow-up question:** " + np.random.choice(PROMPTS[choice]))
@@ -477,23 +507,18 @@ if result is not None:
         render_next_step(chosen_state, mode)
 
     elif mode == "leaning":
-        st.warning(
-            "There’s a signal here, but it’s mixed. Rather than choose for you, "
-            "the system offers a couple of possibilities."
-        )
+        st.warning("The signal is mixed—so instead of guessing, we’ll explore possibilities together.")
         top2 = dist.head(2)["state"].tolist()
         st.write(f"Two possibilities: **{top2[0]}** or **{top2[1]}**")
         choice = st.radio("Which feels closer?", top2, index=0, key="leaning_choice")
-        st.caption("You don’t need to answer perfectly — just notice what comes up.")
+        st.caption("You don’t need to answer perfectly—just notice what comes up.")
         st.write("**Question:** " + np.random.choice(PROMPTS[choice]))
         chosen_state = choice
         render_next_step(chosen_state, mode)
 
     else:
-        st.success(
-            "The signal is clearer here, so here’s a gentle question you might reflect on."
-        )
-        st.caption("You don’t need to answer perfectly — just notice what comes up.")
+        st.success("The signal is clearer here—so here’s a gentle question to help you tune in.")
+        st.caption("You don’t need to answer perfectly—just notice what comes up.")
         st.write("**Question:** " + np.random.choice(PROMPTS[pred_state]))
         chosen_state = pred_state
         render_next_step(chosen_state, mode)
