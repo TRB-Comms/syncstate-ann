@@ -369,7 +369,7 @@ if PUBLIC_DEMO:
         "It shows how uncertainty-aware AI can support reflection — not make judgments."
     )
 
-with st.expander("What this is — and what it isn’t"):
+with st.expander("What this is and what it isn’t"):
     st.markdown(
         """
 **What this is**
@@ -380,7 +380,7 @@ with st.expander("What this is — and what it isn’t"):
 **What this isn’t**
 - Not a diagnosis or medical assessment
 - Not a replacement for human support or judgment
-- Not advice — you always choose what fits
+- Not advice; you always choose what fits
 
 If you’re feeling unsafe or in crisis, the right next step is human help.
 """
