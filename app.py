@@ -359,9 +359,9 @@ def render_next_step(chosen_state: str, mode: str):
 # -----------------------------
 # UI
 # -----------------------------
-st.set_page_config(page_title="SYNCstate", layout="centered")
-st.title("SYNCstate")
-st.caption("A gentle check-in to support reflection — not diagnosis or advice.")
+st.set_page_config(page_title="S.Y.N.Cstate", layout="centered")
+st.title("S.Y.N.Cstate")
+st.caption("A gentle check-in to support reflection, not diagnosis or advice.")
 
 if PUBLIC_DEMO:
     st.info(
@@ -407,7 +407,7 @@ if not PUBLIC_DEMO:
         st.write(pd.DataFrame(cm, index=STATES, columns=STATES))
 
 st.divider()
-st.subheader("How are you feeling today?")
+st.subheader("How are you today?")
 st.caption("Use the sliders to let Tee know how you're feeling, 5 being very goo and 1, not good at all.")
 
 # Presets
