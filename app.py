@@ -366,7 +366,7 @@ st.caption("A gentle check-in to support reflection, not diagnosis or advice.")
 if PUBLIC_DEMO:
     st.info(
         "This is a demonstration experience using representative, non-identifiable data. "
-        "It shows how uncertainty-aware AI can support reflection — not make judgments."
+        "It shows how uncertainty-aware AI can support reflection, not make judgments."
     )
 
 with st.expander("What this is and what it isn’t"):
